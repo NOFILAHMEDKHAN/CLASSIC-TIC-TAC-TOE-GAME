@@ -36,5 +36,5 @@ The **Minimax** algorithm recursively evaluates all possible future moves to cho
 ## File Structure
 ```yaml
 ├── Tic-Tac-Toe AI: Minimax and Alpha-Beta Pruning.py  # Main game and AI logic
-├── Video of Output.mp4                               # Demo gameplay video
+├── demo of Output.mp4                               # Demo gameplay video
 ├── README.md                                         # Project documentation
