@@ -1,12 +1,15 @@
-import numpy as np
 import time
 from math import inf
+import numpy as np
+
 class TicTacToe:
     def __init__(self, human_player=1):
         self.board = np.zeros((3, 3))  # 0=empty, 1=X, 2=O
         self.current_player = 1  # X starts
         self.human_player = human_player  # 1 for X, 2 for O
         self.ai_player = 3 - human_player
+        self.nodes_visited_minimax = 0  # Minimax nodes visited
+        self.nodes_visited_ab = 0  # Alpha-Beta Pruning nodes visited
 
     def print_board(self):
         symbols = {0: '.', 1: 'X', 2: 'O'}
@@ -46,8 +49,8 @@ class TicTacToe:
             return -1
         return 0
 
-    #  Minimax Algorithm 
     def minimax(self, depth, is_maximizing):
+        self.nodes_visited_minimax += 1  # Increment Minimax node count
         if self.game_over():
             return self.evaluate()
 
@@ -68,8 +71,8 @@ class TicTacToe:
                 best_score = min(score, best_score)
             return best_score
 
-    # Minimax with Alpha-Beta Pruning 
     def minimax_ab(self, depth, is_maximizing, alpha=-inf, beta=inf):
+        self.nodes_visited_ab += 1  # Increment Alpha-Beta node count
         if self.game_over():
             return self.evaluate()
 
@@ -117,6 +120,7 @@ class TicTacToe:
             self.board[row][col] = self.current_player
             score = self.minimax_ab(0, self.current_player == 2, alpha, beta)
             self.board[row][col] = 0
+            best_score = score if self.current_player == 1 else best_score
             if (self.current_player == 1 and score > best_score) or (self.current_player == 2 and score < best_score):
                 best_score = score
                 best_move = (row, col)
@@ -126,96 +130,80 @@ class TicTacToe:
                 beta = min(beta, best_score)
         return best_move
 
-def compare_algorithms():
-    positions = [
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0]],  # Empty board
-        [[1, 0, 0], [0, 2, 0], [0, 0, 0]],   # Early game
-        [[1, 2, 1], [2, 1, 0], [0, 0, 0]]    # Mid game
-    ]
-    
-    for i, board in enumerate(positions):
-        print(f"\nTest Position {i+1}:")
-        game = TicTacToe()
-        game.board = np.array(board)
-
-        # Minimax
-        start_time = time.time()
-        game.get_best_move_minimax()
-        minimax_time = time.time() - start_time
-
-        # Alpha-Beta
-        start_time = time.time()
-        game.get_best_move_minimax_ab()
-        ab_time = time.time() - start_time
-
-        print(f"Minimax time: {minimax_time:.6f} seconds")
-        print(f"Alpha-Beta time: {ab_time:.6f} seconds")
-        if ab_time > 0:
-            print(f"Alpha-Beta is {minimax_time/ab_time:.2f}x faster")
-
 def play_game():
-    print("Welcome to Tic-Tac-Toe!")
-    print("Choose your player:")
-    print("1. X (first player)")
-    print("2. O (second player)")
-    human_player = int(input("Enter choice (1 or 2): "))
-
-    print("\nSelect AI mode:")
-    print("1. Human vs Minimax AI")
-    print("2. Human vs Minimax with Alpha-Beta AI")
-    print("3. Minimax AI vs Alpha-Beta AI")
-    choice = int(input("Choose game mode (1-3): "))
-
-    game = TicTacToe(human_player)
-
-    while not game.game_over():
-        game.print_board()
-        current = game.current_player
-        symbol = 'X' if current == 1 else 'O'
-        print(f"Player {symbol}'s turn")
-
-        if (current == game.human_player and choice != 3):
-            try:
-                row, col = map(int, input("Enter row and column (0-2): ").split())
-            except:
-                print("Invalid input. Try again.")
-                continue
-        else:
-            if choice == 1 or (choice == 3 and current == 1):
-                row, col = game.get_best_move_minimax()
-                print(f"Minimax AI chooses: {row}, {col}")
-            else:
-                row, col = game.get_best_move_minimax_ab()
-                print(f"Minimax AB AI chooses: {row}, {col}")
-
-        if not game.make_move(row, col):
-            print("Invalid move. Try again.")
-
-    game.print_board()
-    if game.is_winner(1):
-        print("X wins!")
-    elif game.is_winner(2):
-        print("O wins!")
-    else:
-        print("It's a draw!")
-
-def main_menu():
     while True:
-        print("\n====== Tic-Tac-Toe Menu ======")
-        print("1. Play Game")
-        print("2. Compare Minimax and Alpha-Beta")
-        print("3. Exit")
-        choice = input("Enter your choice (1-3): ")
+        print("Welcome to Tic-Tac-Toe!")
+        print("Menu:")
+        print("1. Play game")
+        print("2. Exit")
+        choice = int(input("Enter choice (1 or 2): "))
 
-        if choice == '1':
-            play_game()
-        elif choice == '2':
-            compare_algorithms()
-        elif choice == '3':
-            print("Exiting... Goodbye!")
+        if choice == 2:
+            print("Exiting the game.")
             break
+
+        print("Choose your player:")
+        print("1. X (first player)")
+        print("2. O (second player)")
+        human_player = int(input("Enter choice (1 or 2): "))
+
+        print("\nSelect AI mode:")
+        print("1. Human vs Minimax AI")
+        print("2. Human vs Minimax with Alpha-Beta AI")
+        mode = int(input("Choose game mode (1 or 2): "))
+
+        game = TicTacToe(human_player)
+
+        while not game.game_over():
+            game.print_board()
+            current = game.current_player
+            symbol = 'X' if current == 1 else 'O'
+            print(f"Player {symbol}'s turn")
+
+            if current == game.human_player:
+                try:
+                    row, col = map(int, input("Enter row and column (0-2): ").split())
+                except:
+                    print("Invalid input. Try again.")
+                    continue
+            else:
+                if mode == 1:
+                    start_time = time.time()
+                    game.nodes_visited_minimax = 0  # Reset node count
+                    row, col = game.get_best_move_minimax()
+                    minimax_time = time.time() - start_time
+                    print(f"Minimax AI chooses: {row}, {col}")
+                    print(f"Minimax time: {minimax_time:.6f} seconds")
+                    print(f"Minimax visited {game.nodes_visited_minimax} nodes")
+                elif mode == 2:
+                    start_time = time.time()
+                    game.nodes_visited_ab = 0  # Reset node count
+                    row, col = game.get_best_move_minimax_ab()
+                    ab_time = time.time() - start_time
+                    print(f"Alpha-Beta AI chooses: {row}, {col}")
+                    print(f"Alpha-Beta time: {ab_time:.6f} seconds")
+                    print(f"Alpha-Beta visited {game.nodes_visited_ab} nodes")
+
+            if not game.make_move(row, col):
+                print("Invalid move. Try again.")
+
+        game.print_board()
+        if game.is_winner(1):
+            print("X wins!")
+        elif game.is_winner(2):
+            print("O wins!")
         else:
-            print("Invalid input. Try again.")
+            print("It's a draw!")
+
+        # Comparison after the game
+        if mode == 1 or mode == 2:
+            print("\nPerformance Comparison:")
+            if mode == 1:
+                print(f"Minimax algorithm visited {game.nodes_visited_minimax} nodes.")
+                print(f"Minimax time: {minimax_time:.6f} seconds")
+            if mode == 2:
+                print(f"Alpha-Beta Pruning algorithm visited {game.nodes_visited_ab} nodes.")
+                print(f"Alpha-Beta time: {ab_time:.6f} seconds")
 
 if __name__ == "__main__":
-    main_menu()
+    play_game()
